@@ -149,7 +149,7 @@ app.get('/create-agent', async (req, res) => {
                             <div><strong>Agent #${agent.id}</strong></div>
                             <div style="flex:1;" class="agent-info">${escapeHtml(agent.basic_info) || '<em>No description available</em>'}</div>
                             <div>
-                                <button type="button" onclick="toggleEdit(${agent.id})">Edit</button>
+                                <button type="button" onclick="editClick(${agent.id})">Edit</button>
                             </div>
                         </div>
                         <form id="edit-${agent.id}" class="edit-form" action="/agents/${agent.id}" method="post" style="display:none;">
@@ -158,7 +158,7 @@ app.get('/create-agent', async (req, res) => {
                                 <textarea id="basicInfo-${agent.id}" name="basic_info" rows="3" required>${escapeHtml(agent.basic_info)}</textarea>
                             </div>
                             <button type="submit">Save</button>
-                            <button type="button" onclick="toggleEdit(${agent.id}); return false;">Cancel</button>
+                            <button type="button" onclick="closeEdit(${agent.id}); return false;">Cancel</button>
                         </form>
                     </div>
                 `).join('')}
@@ -168,10 +168,28 @@ app.get('/create-agent', async (req, res) => {
         </div>
 
         <script>
-            function toggleEdit(id) {
+            async function editClick(id) {
+                try {
+                    const res = await fetch('/api/agents/' + id + '/conversations');
+                    if (!res.ok) throw new Error('Network response not ok: ' + res.status);
+                    const data = await res.json();
+                    const convs = data.conversation_ids || [];
+                    if (convs.length > 0) {
+                        const msg = 'Agent #' + id + ' is used in ' + convs.length + ' conversation(s): ' + convs.join(', ') + '. Editing will affect these conversations. Continue?';
+                        if (!confirm(msg)) return;
+                    }
+                    const el = document.getElementById('edit-' + id);
+                    if (!el) return;
+                    el.style.display = el.style.display === 'none' ? 'block' : 'none';
+                } catch (err) {
+                    alert('Error checking conversations: ' + (err && err.message));
+                    console.error(err);
+                }
+            }
+
+            function closeEdit(id) {
                 const el = document.getElementById('edit-' + id);
-                if (!el) return;
-                el.style.display = el.style.display === 'none' ? 'block' : 'none';
+                if (el) el.style.display = 'none';
             }
         </script>
     </body>
@@ -351,6 +369,24 @@ app.get('/api/users', async (req, res) => {
         return res.status(500).json({ error: err.message });
     }
 })
+
+// Return all conversation IDs (JSON) that use a given agent
+app.get('/api/agents/:agentId/conversations', async (req, res) => {
+    const agentId = req.params.agentId;
+    if (!agentId || isNaN(Number(agentId))) {
+        return res.status(400).json({ error: 'Missing or invalid agentId parameter' });
+    }
+
+    try {
+        const query = `SELECT id FROM conversations WHERE agent_id = $1 ORDER BY id ASC`;
+        const result = await pool.query(query, [Number(agentId)]);
+        const conversationIds = (result.rows || []).map(r => r.id);
+        return res.json({ conversation_ids: conversationIds });
+    } catch (err) {
+        console.error('Get agent conversations error', err);
+        return res.status(500).json({ error: err.message });
+    }
+});
 
 app.get('/api/users/:userId/conversations', async (req, res) => {
     const userId = req.params.userId;
