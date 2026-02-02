@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            display: flex;
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+            height: calc(100vh - 40px);
+        }
+        
+        .panel {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .users-panel {
+            flex: 1;
+            min-width: 300px;
+            max-width: 400px;
+        }
+        
+        .conversations-panel {
+            flex: 2;
+            min-width: 500px;
+        }
+        
+        .panel-header {
+            background: #667eea;
+            color: white;
+            padding: 20px;
+            font-size: 18px;
+            font-weight: 600;
+            border-bottom: 3px solid #764ba2;
+        }
+        
+        .search-container {
+            padding: 15px 20px;
+            background: #f5f5f5;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+        }
+        
+        .panel-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        
+        .user-item {
+            padding: 12px;
+            margin-bottom: 8px;
+            background: #f5f5f5;
+            border-left: 4px solid #667eea;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .user-item:hover {
+            background: #eee;
+            border-left-color: #764ba2;
+            transform: translateX(4px);
+        }
+        
+        .user-item.active {
+            background: #667eea;
+            color: white;
+            border-left-color: #764ba2;
+        }
+        
+        .user-item-id {
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .user-item-meta {
+            font-size: 12px;
+            opacity: 0.7;
+            margin-top: 4px;
+        }
+        
+        .conversation-item {
+            padding: 15px;
+            margin-bottom: 12px;
+            background: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .conversation-item:hover {
+            background: #f0f0f0;
+            border-color: #667eea;
+        }
+        
+        .conversation-info {
+            flex: 1;
+        }
+        
+        .conversation-id {
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 4px;
+            cursor: pointer;
+        }
+        
+        .conversation-id:hover {
+            text-decoration: underline;
+        }
+        
+        .score-section {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding-left: 15px;
+            border-left: 1px solid #e0e0e0;
+        }
+        
+        .score-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #666;
+            white-space: nowrap;
+        }
+        
+        .score-input {
+            width: 50px;
+            padding: 6px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .score-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+        }
+        
+        .score-button {
+            padding: 6px 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        
+        .score-button:hover {
+            background: #764ba2;
+        }
+        
+        .score-button:active {
+            transform: scale(0.95);
+        }
+        
+        .conversation-meta {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .no-selection {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #999;
+            font-style: italic;
+        }
+        
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #999;
+        }
+        
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .admin-header {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .admin-title h1 {
+            color: #333;
+            margin-bottom: 4px;
+        }
+        
+        .admin-title p {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .admin-badge {
+            background: #667eea;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-header">
+        <div class="admin-title">
+            <h1>Admin Dashboard</h1>
+            <p>Manage users and their conversations</p>
+        </div>
+        <div class="admin-badge">Admin: <span id="adminEmail">Loading...</span></div>
+    </div>
+    
+    <div class="container">
+        <div class="panel users-panel">
+            <div class="panel-header">Users</div>
+            <div class="search-container">
+                <input type="text" class="search-input" id="userSearchInput" placeholder="Search by user ID..." onkeyup="searchUsers(this.value)">
+            </div>
+            <div class="panel-content" id="usersList">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    Loading users...
+                </div>
+            </div>
+        </div>
+        
+        <div class="panel conversations-panel">
+            <div class="panel-header">Conversations</div>
+            <div class="panel-content" id="conversationsList">
+                <div class="no-selection">Select a user to view their conversations</div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let selectedUserId = null;
+        let currentAdminId = null;
+        let allUsers = [];
+        
+        async function loadUsers() {
+            try {
+                const response = await fetch('/api/users');
+                const data = await response.json();
+                
+                if (!data.users || data.users.length === 0) {
+                    document.getElementById('usersList').innerHTML = '<div class="no-selection">No users found</div>';
+                    return;
+                }
+                
+                allUsers = data.users;
+                displayUsers(allUsers);
+            } catch (error) {
+                document.getElementById('usersList').innerHTML = `<div class="no-selection">Error loading users: ${error.message}</div>`;
+            }
+        }
+        
+        function displayUsers(users) {
+            const usersList = document.getElementById('usersList');
+            if (!users || users.length === 0) {
+                usersList.innerHTML = '<div class="no-selection">No users found</div>';
+                return;
+            }
+            
+            usersList.innerHTML = users.map(user => `
+                <div class="user-item" onclick="selectUser(${user.id})">
+                    <div class="user-item-id">User #${user.id}</div>
+                    <div class="user-item-meta">Created: ${new Date(user.created_at).toLocaleDateString()}</div>
+                </div>
+            `).join('');
+        }
+        
+        function searchUsers(searchTerm) {
+            if (!searchTerm.trim()) {
+                displayUsers(allUsers);
+                return;
+            }
+            
+            const filtered = allUsers.filter(user => 
+                user.id.toString().includes(searchTerm.trim())
+            );
+            
+            displayUsers(filtered);
+        }
+        
+        async function selectUser(userId) {
+            selectedUserId = userId;
+            
+            // Update UI
+            document.querySelectorAll('.user-item').forEach(item => item.classList.remove('active'));
+            event.target.closest('.user-item').classList.add('active');
+            
+            // Load conversations
+            await loadConversations(userId);
+        }
+        
+        async function loadConversations(userId) {
+            try {
+                const conversationsList = document.getElementById('conversationsList');
+                conversationsList.innerHTML = '<div class="loading"><div class="spinner"></div>Loading conversations...</div>';
+                
+                const response = await fetch(`/api/users/${userId}/conversations`);
+                const data = await response.json();
+                
+                console.log('Conversations response:', data);
+                
+                if (!data.conversations || data.conversations.length === 0) {
+                    conversationsList.innerHTML = '<div class="no-selection">No conversations found for this user</div>';
+                    return;
+                }
+                
+                conversationsList.innerHTML = data.conversations.map(convo => `
+                    <div class="conversation-item">
+                        <div class="conversation-info">
+                            <div class="conversation-id" onclick="viewConversation(${convo.id})">Conversation #${convo.id}</div>
+                        </div>
+                        <div class="score-section">
+                            <span class="score-label">Score:</span>
+                            <input type="number" class="score-input" min="0" max="10" value="${convo.score || ''}" placeholder="0-10" data-convo-id="${convo.id}">
+                            <button class="score-button" onclick="saveScore(${convo.id}, this)">Save</button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading conversations:', error);
+                document.getElementById('conversationsList').innerHTML = `<div class="no-selection">Error loading conversations: ${error.message}</div>`;
+            }
+        }
+        
+        async function saveScore(convoId, button) {
+            try {
+                const input = document.querySelector(`input[data-convo-id="${convoId}"]`);
+                const score = parseInt(input.value);
+                
+                if (isNaN(score) || score < 0 || score > 10) {
+                    alert('Please enter a score between 0 and 10');
+                    return;
+                }
+                
+                button.disabled = true;
+                button.textContent = 'Saving...';
+                
+                const response = await fetch(`/api/conversations/${convoId}/score`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ score, adminId: currentAdminId })
+                });
+                
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    alert('Error saving score: ' + result.error);
+                    return;
+                }
+                
+                button.textContent = 'Saved!';
+                setTimeout(() => {
+                    button.textContent = 'Save';
+                    button.disabled = false;
+                }, 2000);
+            } catch (error) {
+                console.error('Error saving score:', error);
+                alert('Error saving score: ' + error.message);
+                button.textContent = 'Save';
+                button.disabled = false;
+            }
+        }
+        
+        function viewConversation(convoId) {
+            window.open(`/conversation/${convoId}`, '_blank');
+        }
+        
+        async function loadAdminInfo() {
+            try {
+                const response = await fetch('/api/admin-info');
+                const data = await response.json();
+                document.getElementById('adminEmail').textContent = data.admin.email;
+                currentAdminId = data.admin.id;
+            } catch (error) {
+                document.getElementById('adminEmail').textContent = 'Admin';
+            }
+        }
+        
+        // Initialize
+        loadAdminInfo();
+        loadUsers();
+    </script>
+</body>
+</html>
