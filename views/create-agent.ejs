@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Create Agent</title>
+        <style>
+            body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+            .container { background-color: #f9f9f9; padding: 20px; border-radius: 8px; }
+            .form-group { margin-bottom: 15px; }
+            label { display: block; margin-bottom: 5px; font-weight: bold; }
+            textarea { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ddd; border-radius: 4px; font-family: Arial, sans-serif; }
+            button { padding: 8px 12px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.95em; }
+            button:hover { background-color: #388E3C; }
+            a.back { display:inline-block; margin-top:10px; color:#1976D2; text-decoration:none; }
+            .agent-row { background: white; border: 1px solid #e0e0e0; padding: 12px; margin-bottom: 10px; border-radius: 6px; }
+            .agent-meta { display:flex; gap:10px; align-items:center; }
+            .agent-info { color:#666; margin-top:6px; white-space:pre-wrap; }
+            .edit-form { margin-top:10px; }
+            .edit-form textarea { min-height:60px; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>Create Agent</h1>
+
+            <form action="/agents" method="post">
+                <div class="form-group">
+                    <label for="basicInfo">Basic Info (short description)</label>
+                    <textarea id="basicInfo" name="basic_info" rows="4" required placeholder="Enter basic info about this agent..."></textarea>
+                </div>
+                <button type="submit">Create Agent</button>
+            </form>
+
+            <h2 style="margin-top:24px;">Existing Agents</h2>
+            <div id="agentsList">
+                <% agents.forEach(agent => { %>
+                    <div class="agent-row" id="agent-<%= agent.id %>">
+                        <div class="agent-meta">
+                            <div><strong>Agent #<%= agent.id %></strong></div>
+                            <div style="flex:1;" class="agent-info"><%= agent.basic_info || '<em>No description available</em>' %></div>
+                            <div>
+                                <button type="button" onclick="editClick(<%= agent.id %>)">Edit</button>
+                            </div>
+                        </div>
+                        <form id="edit-<%= agent.id %>" class="edit-form" action="/agents/<%= agent.id %>" method="post" style="display:none;">
+                            <div class="form-group">
+                                <label for="basicInfo-<%= agent.id %>">Basic Info</label>
+                                <textarea id="basicInfo-<%= agent.id %>" name="basic_info" rows="3" required><%= agent.basic_info %></textarea>
+                            </div>
+                            <button type="submit">Save</button>
+                            <button type="button" onclick="closeEdit(<%= agent.id %>); return false;">Cancel</button>
+                        </form>
+                    </div>
+                <% }); %>
+            </div>
+
+            <a class="back" href="/">← Back to Home</a>
+        </div>
+
+        <script>
+            async function editClick(id) {
+                try {
+                    const res = await fetch('/api/agents/' + id + '/conversations');
+                    if (!res.ok) throw new Error('Network response not ok: ' + res.status);
+                    const data = await res.json();
+                    const convs = data.conversation_ids || [];
+                    if (convs.length > 0) {
+                        const msg = 'Agent #' + id + ' is used in ' + convs.length + ' conversation(s): ' + convs.join(', ') + '. Editing will affect these conversations. Continue?';
+                        if (!confirm(msg)) return;
+                    }
+                    const el = document.getElementById('edit-' + id);
+                    if (!el) return;
+                    el.style.display = el.style.display === 'none' ? 'block' : 'none';
+                } catch (err) {
+                    alert('Error checking conversations: ' + (err && err.message));
+                    console.error(err);
+                }
+            }
+
+            function closeEdit(id) {
+                const el = document.getElementById('edit-' + id);
+                if (el) el.style.display = 'none';
+            }
+        </script>
+    </body>
+</html>
