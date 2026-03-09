@@ -65,6 +65,11 @@ console.log('Admin routes registered');
 // Store adminId for API access
 app.locals.adminId = adminId;
 
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+    process.exit(1);
+});
+
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`)
 })

@@ -22,7 +22,6 @@ export function setupAdminRoutes(app, pool) {
     // GET /admin-api - List all admins
     app.get('/admin-api', async (req, res) => {
         console.log('API HIT: GET /admin');
-        debugger
         try {
             const admins = await getAllAdmins(pool);
             return res.json({ admins });

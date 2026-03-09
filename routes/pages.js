@@ -20,7 +20,6 @@ export function setupPageRoutes(app, pool, globalState) {
     // GET /admin - Admin dashboard
     app.get('/admin', (req, res) => {
         console.log('attempting to render admin page'); 
-        debugger;
         try {
             res.render('admin', {}, (err, html) => {
                 if (err) {
