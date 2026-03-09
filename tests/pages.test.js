@@ -16,5 +16,7 @@ describe('Page Routes Tests', () => {
     jest.clearAllMocks();
   });
 
+  // jest currently configured to ignore this test file, so these tests won't run until you update jest.config.js to include it.
+
   // Add tests for other page routes here (e.g., GET /, GET /create-agent, etc.)
 });
